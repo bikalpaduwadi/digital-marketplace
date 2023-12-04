@@ -1,8 +1,9 @@
+import { z } from "zod";
+import { TRPCError } from "@trpc/server";
+
 import { getPayloadClient } from "../../getPayload";
 import { publicProcedure, router } from "../trpc";
-import { COLLECTIONS } from "../constants/collections";
 import { AuthCredentialsValidator } from "../../lib/validators/accountCredentialsValidator";
-import { TRPCError } from "@trpc/server";
 
 export const authRouter = router({
   createPayloadUser: publicProcedure
@@ -35,5 +36,48 @@ export const authRouter = router({
       });
 
       return { success: true, sentEmail: email };
+    }),
+
+  verifyEmail: publicProcedure
+    .input(z.object({ token: z.string() }))
+    .query(async ({ input }) => {
+      const { token } = input;
+
+      const payload = await getPayloadClient();
+
+      const isVerified = await payload.verifyEmail({
+        collection: "Users",
+        token,
+      });
+
+      if (!isVerified) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      return { success: true };
+    }),
+
+  signIn: publicProcedure
+    .input(AuthCredentialsValidator)
+    .mutation(async ({ input, ctx }) => {
+      const { email, password } = input;
+      const { res } = ctx;
+
+      const payload = await getPayloadClient();
+
+      try {
+        await payload.login({
+          collection: "Users",
+          data: {
+            email,
+            password,
+          },
+          res,
+        });
+
+        return { sucess: true };
+      } catch (error) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
     }),
 });
