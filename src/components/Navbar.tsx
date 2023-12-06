@@ -6,6 +6,7 @@ import Cart from "./Cart";
 import { Icons } from "./Icons";
 import NavItems from "./NavItems";
 import { buttonVariants } from "./ui/button";
+import UserAccountNav from "./UserAccountNav";
 import MaxWidthWrapper from "./MaxWidthWrapper";
 import { getServerSideUser } from "@/lib/payloadUtils";
 
@@ -45,7 +46,7 @@ const Navbar = async () => {
                   )}
 
                   {user ? (
-                    <p></p>
+                    <UserAccountNav user={user} />
                   ) : (
                     <Link
                       href="/sign-up"

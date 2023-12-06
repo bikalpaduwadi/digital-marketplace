@@ -66,17 +66,20 @@ const Page = () => {
 
       if (origin) {
         router.push(`/${origin}`);
+        router.refresh();
 
         return;
       }
 
       if (isSeller) {
         router.push("/sell");
+        router.refresh();
 
         return;
       }
 
       router.push("/");
+      router.refresh();
     },
   });
 
