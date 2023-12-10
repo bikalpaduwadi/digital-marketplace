@@ -1,7 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import type SwiperType from "swiper";
-import React, { useEffect, useState } from "react";
 import { Pagination } from "swiper/modules";
+import React, { useEffect, useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 
 import "swiper/css";
