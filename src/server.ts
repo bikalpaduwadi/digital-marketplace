@@ -1,10 +1,15 @@
+import path from "path";
 import express from "express";
+import bodyParser from "body-parser";
+import { IncomingMessage } from "http";
+import nextBuild from "next/dist/build";
+import { inferAsyncReturnType } from "@trpc/server";
 import * as trpcExpress from "@trpc/server/adapters/express";
 
 import { appRouter } from "./trpc";
 import { getPayloadClient } from "./getPayload";
+import { stripeWebhookHandler } from "./webhooks";
 import { nextApp, nextHandler } from "./nextUtils";
-import { inferAsyncReturnType } from "@trpc/server";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3005;
@@ -18,8 +23,17 @@ const createContext = ({
 });
 
 export type ExpressContext = inferAsyncReturnType<typeof createContext>;
+export type WebhookRequest = IncomingMessage & { rawBody: Buffer };
 
 const start = async () => {
+  const webhookMiddleware = bodyParser.json({
+    verify: (req: WebhookRequest, _, buffer) => {
+      req.rawBody = buffer;
+    },
+  });
+
+  app.post("/api/webhooks/stripe", webhookMiddleware, stripeWebhookHandler);
+
   const payload = await getPayloadClient({
     initOptions: {
       express: app,
@@ -28,6 +42,19 @@ const start = async () => {
       },
     },
   });
+
+  if (process.env.NEXT_BUILD) {
+    app.listen(PORT, async () => {
+      payload.logger.info("Next.js is building for production");
+
+      // @ts-expect-error
+      await nextBuild(path.join(__dirname, "../"));
+
+      process.exit();
+    });
+
+    return;
+  }
 
   app.use(
     "/api/trpc",
